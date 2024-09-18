@@ -1,0 +1,83 @@
+{
+	"name": "04_Dataflow_JSONArrays",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "datalake_customerarrayjson",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerArrayJSONArray"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "synapsaccount310824_customercourse",
+						"type": "DatasetReference"
+					},
+					"name": "Customercoursesink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "flattencustomercourserarrays"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          customerid as integer,",
+				"          customername as string,",
+				"          registered as boolean,",
+				"          courses as string[],",
+				"          details as (mobile as string, city as string)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'arrayOfDocuments') ~> CustomerArrayJSONArray",
+				"CustomerArrayJSONArray foldDown(unroll(courses, courses),",
+				"     mapColumn(",
+				"          CustomerID = customerid,",
+				"          CustomerName = customername,",
+				"          Registered = registered,",
+				"          Courses = courses,",
+				"          Mobile = details.mobile,",
+				"          City = customerid",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flattencustomercourserarrays",
+				"flattencustomercourserarrays sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CustomerID as integer,",
+				"          CustomerName as string,",
+				"          Registered as boolean,",
+				"          Courses as string,",
+				"          Mobile as string,",
+				"          City as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     staged: true,",
+				"     allowCopyCommand: true,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CustomerID,",
+				"          CustomerName,",
+				"          Registered,",
+				"          Courses,",
+				"          Mobile,",
+				"          City",
+				"     )) ~> Customercoursesink"
+			]
+		}
+	}
+}

@@ -1,0 +1,121 @@
+{
+	"name": "02_dataflow_datawarehouse",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "appserver310824_appdb_sales",
+						"type": "DatasetReference"
+					},
+					"name": "SalesOrderHeaderStream"
+				},
+				{
+					"dataset": {
+						"referenceName": "appserver310824_appdb_sales",
+						"type": "DatasetReference"
+					},
+					"name": "SalesOrderDetailStream"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "synapsaccount310824_datapool_factsales",
+						"type": "DatasetReference"
+					},
+					"name": "factSalesStream"
+				}
+			],
+			"transformations": [
+				{
+					"name": "SalesOrderHeaderJoinSalesOrderDetail"
+				},
+				{
+					"name": "selectcolumn"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          SalesOrderID as integer,",
+				"          SalesOrderDetailID as integer,",
+				"          OrderQty as integer,",
+				"          ProductID as integer,",
+				"          UnitPrice as decimal(19,4),",
+				"          UnitPriceDiscount as decimal(19,4),",
+				"          LineTotal as decimal(38,6),",
+				"          rowguid as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SalesOrderHeaderStream",
+				"source(output(",
+				"          SalesOrderID as integer,",
+				"          SalesOrderDetailID as integer,",
+				"          OrderQty as integer,",
+				"          ProductID as integer,",
+				"          UnitPrice as decimal(19,4),",
+				"          UnitPriceDiscount as decimal(19,4),",
+				"          LineTotal as decimal(38,6),",
+				"          rowguid as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SalesOrderDetailStream",
+				"SalesOrderHeaderStream, SalesOrderDetailStream join(SalesOrderHeaderStream@SalesOrderID == SalesOrderDetailStream@SalesOrderID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> SalesOrderHeaderJoinSalesOrderDetail",
+				"SalesOrderHeaderJoinSalesOrderDetail select(mapColumn(",
+				"          SalesOrderID = SalesOrderHeaderStream@SalesOrderID,",
+				"          SalesOrderDetailID = SalesOrderHeaderStream@SalesOrderDetailID,",
+				"          OrderQty = SalesOrderHeaderStream@OrderQty,",
+				"          ProductID = SalesOrderHeaderStream@ProductID,",
+				"          UnitPrice = SalesOrderHeaderStream@UnitPrice,",
+				"          UnitPriceDiscount = SalesOrderHeaderStream@UnitPriceDiscount,",
+				"          LineTotal = SalesOrderHeaderStream@LineTotal,",
+				"          OrderQty = SalesOrderDetailStream@OrderQty,",
+				"          ProductID = SalesOrderDetailStream@ProductID,",
+				"          UnitPrice = SalesOrderDetailStream@UnitPrice,",
+				"          UnitPriceDiscount = SalesOrderDetailStream@UnitPriceDiscount,",
+				"          LineTotal = SalesOrderDetailStream@LineTotal,",
+				"          ModifiedDate = SalesOrderDetailStream@ModifiedDate",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectcolumn",
+				"selectcolumn sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          SalesOrderID as integer,",
+				"          OrderDate as timestamp,",
+				"          CustomerID as integer,",
+				"          SubTotal as decimal(19,4),",
+				"          TaxAmt as decimal(19,4),",
+				"          Freight as decimal(19,4),",
+				"          TotalDue as decimal(19,4),",
+				"          OrderQty as integer,",
+				"          ProductID as integer,",
+				"          UnitPrice as decimal(19,4),",
+				"          UnitPriceDiscount as decimal(19,4),",
+				"          LineTotal as decimal(18,0)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     staged: true,",
+				"     allowCopyCommand: true,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> factSalesStream"
+			]
+		}
+	}
+}

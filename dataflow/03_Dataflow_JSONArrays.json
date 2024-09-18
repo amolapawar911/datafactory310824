@@ -1,0 +1,76 @@
+{
+	"name": "03_Dataflow_JSONArrays",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "datalake310824_customer_json",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerArrayJSONStream"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "datalake310824_customer",
+						"type": "DatasetReference"
+					},
+					"name": "customercoursesink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "flattenrows"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          courses as string[],",
+				"          customerid as short,",
+				"          customername as string,",
+				"          registered as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'arrayOfDocuments') ~> CustomerArrayJSONStream",
+				"CustomerArrayJSONStream foldDown(unroll(),",
+				"     mapColumn(",
+				"          customerid,",
+				"          customername,",
+				"          registered,",
+				"          courses",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flattenrows",
+				"flattenrows sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CustomerID as integer,",
+				"          CustomerName as string,",
+				"          Registered as boolean,",
+				"          Courses as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     staged: true,",
+				"     allowCopyCommand: true,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CustomerID = customerid,",
+				"          CustomerName = customername,",
+				"          Registered = registered,",
+				"          Courses = courses",
+				"     )) ~> customercoursesink"
+			]
+		}
+	}
+}

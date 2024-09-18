@@ -1,0 +1,100 @@
+{
+	"name": "11pipeline-storeprocedure",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup1",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": "[dbo].[GetCompanyName]",
+						"storedProcedureParameters": {
+							"pCustomerID": {
+								"type": "Int32",
+								"value": "277"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "synapsaccount310824_datapool_poolActivityLog",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Setcompanyname",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "CompanyName",
+					"value": {
+						"value": "@activity('Lookup1').output.firstRow.CompanyName",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Setdefaultcompanyname",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "CompanyName",
+							"value": {
+								"type": "String",
+								"content": "Default"
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			}
+		],
+		"variables": {
+			"CompanyName": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-09-18T09:17:04Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

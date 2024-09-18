@@ -1,0 +1,89 @@
+{
+	"name": "06_Dataflow_ExtractResourceGroup",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "datalake310824_data_ActivityCSV",
+						"type": "DatasetReference"
+					},
+					"name": "ActivityLogCSVStream"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "synapsaccount310824_datapool_poolActivityLog",
+						"type": "DatasetReference"
+					},
+					"name": "ActivityLogSink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "splitrows"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Correlationid as string,",
+				"          Operationname as string,",
+				"          Status as string,",
+				"          Eventcategory as string,",
+				"          Level as string,",
+				"          Time as string,",
+				"          Subscription as string,",
+				"          Eventinitiatedby as string,",
+				"          Resourcetype as string,",
+				"          Resourcegroup as string,",
+				"          Resource as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> ActivityLogCSVStream",
+				"ActivityLogCSVStream split(Resourcegroup == 'app-grp',",
+				"     disjoint: false) ~> splitrows@(appgrpstream, otherstream)",
+				"splitrows@appgrpstream sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Correlationid as string,",
+				"          Operationname as string,",
+				"          Status as string,",
+				"          Eventcategory as string,",
+				"          Level as string,",
+				"          Time as timestamp,",
+				"          Subscription as string,",
+				"          Eventinitiatedby as string,",
+				"          Resourcetype as string,",
+				"          Resourcegroup as string,",
+				"          Resource as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     staged: true,",
+				"     allowCopyCommand: true,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          Correlationid,",
+				"          Operationname,",
+				"          Status,",
+				"          Eventcategory,",
+				"          Level,",
+				"          Time,",
+				"          Subscription,",
+				"          Eventinitiatedby,",
+				"          Resourcetype,",
+				"          Resourcegroup,",
+				"          Resource",
+				"     )) ~> ActivityLogSink"
+			]
+		}
+	}
+}
