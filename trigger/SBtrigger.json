@@ -1,0 +1,24 @@
+{
+	"name": "SBtrigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "21-pipeline-csv-pool",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Minute",
+				"interval": 5,
+				"startTime": "2024-09-18T11:13:00",
+				"timeZone": "India Standard Time"
+			}
+		}
+	}
+}
